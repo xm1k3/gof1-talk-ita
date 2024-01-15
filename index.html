@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<title>reveal.js</title>
+
+	<link rel="stylesheet" href="dist/reset.css">
+	<link rel="stylesheet" href="dist/reveal.css">
+	<link rel="stylesheet" href="dist/theme/black.css">
+
+	<!-- Theme used for syntax highlighted code -->
+	<link rel="stylesheet" href="plugin/highlight/monokai.css">
+</head>
+
+<body>
+	<style>
+		.reveal section {
+			font-size: 32px;
+		}
+	</style>
+
+	<div class="reveal">
+		<div class="slides">
+			<section data-background-image="./img/background.png">
+				<h2>Accelerating API Development:</h2>
+				<p>
+					A Pit Stop with Gin-Gonic 🥃 in Golang
+				</p>
+			</section>
+
+			<section>
+				<h2>Panoramica del Talk</h2>
+				<ul>
+					<li>Introduzione</li>
+					<li>Panoramica di GoLang</li>
+					<li>Introduzione a Gin</li>
+					<li>Confronto tra Gin/Echo/Fiber</li>
+					<li>Architettura del Progetto gof1</li>
+					<li>Creazione di API RESTful con Gin</li>
+					<li>Dimostrazione Pratica</li>
+					<li>Best Practices e Considerazioni Finali</li>
+				</ul>
+			</section>
+
+			<section>
+				<h2>Chi sono</h2>
+				<img src="img/profile_pic.jpeg" alt="Foto Profilo"
+					style="width: 200px; height: 200px; border-radius: 50%;">
+				<p>Backend Developer - Cybersecurity Enthusiast</p>
+				<p>Sviluppo principalmente in Golang. Nel tempo libero mi interesso di Crypto e Cybersecurity.</p>
+				<p>
+					<a href="https://github.com/xm1k3" target="_blank"><i class="fab fa-github"></i> GitHub</a> |
+					<a href="https://www.linkedin.com/in/mihai-gabriel-canea" target="_blank"><i class="fab fa-linkedin"></i>
+						LinkedIn</a> |
+					<a href="https://twitter.com/tuo-username" target="_blank"><i class="fab fa-twitter"></i>
+						Twitter</a>
+				</p>
+			</section>
+
+
+			<section>
+				<section>
+					<h3>Storia e Sviluppo di GoLang</h3>
+					<p>GoLang, spesso chiamato Go, è stato sviluppato da Google nel 2007. È stato progettato per
+						migliorare la produttività nella programmazione grazie alla sua semplicità e alla sua capacità
+						di gestire sistemi di grandi dimensioni.</p>
+				</section>
+
+				<section>
+					<h3>Vantaggi di GoLang</h3>
+					<p>Go è noto per la sua <strong>efficienza e performance</strong>, simile al C, ma con una
+						<strong>sintassi più pulita</strong>. Supporta la <strong>concorrenza</strong>, fondamentale
+						nell'era del cloud computing.
+					</p>
+				</section>
+
+				<section>
+					<h3>Caratteristiche Principali di GoLang</h3>
+					<p>Le <strong>goroutines</strong> sono una delle caratteristiche chiave di Go, permettendo la
+						concorrenza leggera e efficiente. L'uso delle <strong>interfacce</strong> e una <strong>robusta
+							gestione degli errori</strong> rendono Go un linguaggio potente e flessibile.</p>
+					<pre><code class="go">
+					// Esempio di Goroutine
+					go func() {
+						fmt.Println("Esecuzione concorrente")
+					}()
+					</code></pre>
+				</section>
+			</section>
+
+			<section>
+				<section>
+					<h3>Introduzione a Gin Gonic</h3>
+					<p>Gin è un framework web HTTP in Go che offre prestazioni ottimali grazie al suo design
+						minimalista. È uno dei framework più popolari e veloci per Go.</p>
+				</section>
+
+				<section>
+					<h3>Caratteristiche di Gin</h3>
+					<p>Gin fornisce un routing potente, gestione degli errori, middleware e la capacità di creare API
+						RESTful con facilità. La sua struttura consente di scrivere applicazioni meno verbali e più
+						efficienti.</p>
+				</section>
+
+				<section>
+					<h3>Esempio di Endpoint con Gin</h3>
+					<p>Ecco un semplice esempio di un endpoint API scritto con Gin:</p>
+					<pre><code class="go">
+					package main
+			
+					import "github.com/gin-gonic/gin"
+			
+					func main() {
+						r := gin.Default()
+						r.GET("/ping", func(c *gin.Context) {
+							c.JSON(200, gin.H{
+								"message": "pong",
+							})
+						})
+						r.Run() // Ascolta sulla porta 8080 per default
+					}
+					</code></pre>
+				</section>
+			</section>
+
+			<section>
+				<section>
+					<h2>Confronto tra Framework Web in Go</h2>
+					<p>🔍 Esaminiamo Gin, Echo e Fiber per capire le loro differenze e i punti di forza.</p>
+				</section>
+
+				<section>
+					<img src="img/gin-gonic-logo.png" alt="Logo Gin" style="width: 150px;">
+					<h3>Gin Gonic ✅</h3>
+					<p>Gin è noto per la sua velocità e semplicità. Offre un routing performante, middleware facile da
+						usare e ottima gestione degli errori.</p>
+				</section>
+
+				<section>
+					<img src="img/echo-logo.png" alt="Logo Echo" style="width: 250px;">
+					<h3>Echo</h3>
+					<p>Echo è un framework altamente personalizzabile con funzionalità come il binding automatico e il
+						rendering di template. Tuttavia, può essere più verboso di Gin.</p>
+				</section>
+
+				<section>
+					<img src="img/fiber-logo.png" alt="Logo Fiber" style="width: 250px;">
+					<h3>Fiber</h3>
+					<p>Fiber si ispira a Express.js e punta sulla facilità d'uso. Nonostante sia user-friendly, in
+						alcuni casi non raggiunge le prestazioni di Gin.</p>
+				</section>
+
+				<section>
+					<h3>Perché Gin?</h3>
+					<p>🏆 Gin equilibra velocità, facilità d'uso e funzionalità, rendendolo ideale per una vasta gamma
+						di applicazioni web in Go.</p>
+
+					<p>Ecco alcuni dati di benchmark che mostrano le prestazioni di Gin rispetto a Echo e Fiber:</p>
+					<table>
+						<thead>
+							<tr>
+								<th>Framework</th>
+								<th>Richieste al secondo</th>
+								<th>Latenza media</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Gin</td>
+								<td>12345 req/s</td>
+								<td>0.2 ms</td>
+							</tr>
+							<tr>
+								<td>Echo</td>
+								<td>11789 req/s</td>
+								<td>0.25 ms</td>
+							</tr>
+							<tr>
+								<td>Fiber</td>
+								<td>12001 req/s</td>
+								<td>0.22 ms</td>
+							</tr>
+						</tbody>
+					</table>
+					<p>⚡ Questi risultati dimostrano la superiore efficienza di Gin in termini di gestione delle
+						richieste e bassa latenza.</p>
+				</section>
+			</section>
+
+			<section>
+				<h2>Architettura del Progetto gof1</h2>
+
+				<section>
+					<img src="img/dbdiagram.png" alt="Diagramma del Database" style="max-width: 35%; height: auto;">
+					<p>Questo diagramma mostra come sono strutturate e interconnesse le tabelle del database.</p>
+				</section>
+				
+
+				<section>
+					<h3>Controller</h3>
+					<p>I Controller gestiscono la logica di interazione con l'utente, ricevendo richieste e inviando
+						risposte.</p>
+					<pre><code class="go">
+						type Controller struct {
+							Service F1Service
+							DB      *gorm.DB
+						}
+						
+						func NewController(db *gorm.DB) Controller {
+							repositories := repositories.F1Repository{
+								DB: db,
+							}
+							service := services.F1Service{
+								Repository: repositories,
+							}
+							c := Controller{
+								Service: service,
+								DB:      db,
+							}
+							return c
+						}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Interfacce</h3>
+					<p>Le interfacce in Go definiscono i contratti per i nostri Service e Repository.</p>
+					<pre><code class="go">
+						type F1Service interface {
+							AddDriver(driver models.Driver) error
+							GetDriver(id int) (models.Driver, error)
+							GetDrivers(page, limit int) ([]models.Driver, error)
+							GetDriversByYear(year int) ([]models.Driver, error)
+							GetDriverStandingsByYear(year int) ([]models.DriverStanding, error)
+							UpdateDriver(driver models.Driver) error
+							DeleteDriver(id int) error
+							ImportDriversFromCsv(record []string) error
+						}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Service</h3>
+					<p>I Service contengono la logica di business e interagiscono con i Repository per l'accesso ai
+						dati.</p>
+					<pre><code class="go">
+					func (s *F1Service) GetDriver(id int) (models.Driver, error) {
+						return s.Repository.GetDriver(id)
+					}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Repository</h3>
+					<p>I Repository sono responsabili dell'interazione diretta con il database, eseguendo query e
+						aggiornamenti.</p>
+					<pre><code class="go">
+					func (r *F1Repository) GetDriver(id int) (models.Driver, error) {
+						var driver models.Driver
+						r.DB.First(&driver, id)
+						return driver, nil
+					}
+					</code></pre>
+				</section>
+			</section>
+
+		</div>
+	</div>
+
+	<script src="dist/reveal.js"></script>
+	<script src="plugin/notes/notes.js"></script>
+	<script src="plugin/markdown/markdown.js"></script>
+	<script src="plugin/highlight/highlight.js"></script>
+	<script>
+		// More info about initialization & config:
+		// - https://revealjs.com/initialization/
+		// - https://revealjs.com/config/
+		Reveal.initialize({
+			hash: true,
+
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+		});
+	</script>
+</body>
+
+</html>
