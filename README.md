@@ -2,4 +2,4 @@
 
 Click the image to see the presentation:
 
-[![Vedi Presentazione](img/gh-background-social.png)](xm1k3.github.io/gof1-talk-ita/)
+[![Vedi Presentazione](img/gh-background-social.png)](https://xm1k3.github.io/gof1-talk-ita/)
