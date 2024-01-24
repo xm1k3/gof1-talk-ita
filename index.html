@@ -41,8 +41,8 @@
 					<li>Confronto tra Gin/Echo/Fiber</li>
 					<li>Architettura del Progetto gof1</li>
 					<li>Creazione di API RESTful con Gin</li>
-					<li>Dimostrazione Pratica</li>
-					<li>Best Practices e Considerazioni Finali</li>
+					<li>Tests</li>
+					<li>Q&A</li>
 				</ul>
 			</section>
 
@@ -54,10 +54,11 @@
 				<p>Sviluppo principalmente in Golang. Nel tempo libero mi interesso di Crypto e Cybersecurity.</p>
 				<p>
 					<a href="https://github.com/xm1k3" target="_blank"><i class="fab fa-github"></i> GitHub</a> |
-					<a href="https://www.linkedin.com/in/mihai-gabriel-canea" target="_blank"><i class="fab fa-linkedin"></i>
+					<a href="https://www.linkedin.com/in/mihai-gabriel-canea" target="_blank"><i
+							class="fab fa-linkedin"></i>
 						LinkedIn</a> |
 					<a href="https://twitter.com/tuo-username" target="_blank"><i class="fab fa-twitter"></i>
-						Twitter</a>
+						X</a>
 				</p>
 			</section>
 
@@ -198,7 +199,7 @@
 					<img src="img/dbdiagram.png" alt="Diagramma del Database" style="max-width: 35%; height: auto;">
 					<p>Questo diagramma mostra come sono strutturate e interconnesse le tabelle del database.</p>
 				</section>
-				
+
 
 				<section>
 					<h3>Controller</h3>
@@ -210,7 +211,22 @@
 							DB      *gorm.DB
 						}
 						
-						func NewController(db *gorm.DB) Controller {
+						type Options struct {
+							Database string
+						}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Controller</h3>
+					<p>I Controller gestiscono la logica di interazione con l'utente, ricevendo richieste e inviando
+						risposte.</p>
+					<pre><code class="go">
+						func NewController(opts Options) Controller {
+							db, err := config.ConnectSqlite3(opts.Database)
+							if err != nil {
+								log.Fatal(err)
+							}
 							repositories := repositories.F1Repository{
 								DB: db,
 							}
@@ -239,6 +255,7 @@
 							UpdateDriver(driver models.Driver) error
 							DeleteDriver(id int) error
 							ImportDriversFromCsv(record []string) error
+							...
 						}
 					</code></pre>
 				</section>
@@ -266,6 +283,274 @@
 					}
 					</code></pre>
 				</section>
+
+				<section>
+					<h3>Service</h3>
+					<p>... ma aumentiamo di poco la complessità...</p>
+					<pre><code class="go">
+					func (f F1Service) GetDriverStandingsByYear(year int) ([]models.DriverStanding, error) {
+						if year < 1950 || year > time.Now().Year() {
+							return nil, fmt.Errorf("year is out of valid range")
+						}
+					
+						standings, err := f.Repository.GetDriverStandingsByYear(year)
+						if err != nil {
+							return nil, fmt.Errorf("error retrieving driver standings: %w", err)
+						}
+					
+						if len(standings) == 0 {
+							return nil, fmt.Errorf("no driver standings found for year %d", year)
+						}
+					
+						return standings, nil
+					}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Repository</h3>
+					<p></p>
+					<pre><code class="go">
+					func (r *F1Repository) GetDriverStandingsByYear(year int) ([]models.DriverStanding, error) {
+						var standings []models.DriverStanding
+					
+						err := r.DB.
+							Table("results").
+							Select("drivers.id, drivers.forename, drivers.surname, SUM(results.points) as points").
+							Joins("JOIN drivers on drivers.id = results.driverId").
+							Joins("JOIN races on races.id = results.raceId").
+							Where("races.year = ?", year).
+							Group("drivers.id, drivers.forename, drivers.surname").
+							Order("SUM(results.points) DESC").
+							Scan(&standings).Error
+					
+						return standings, err
+					}
+					</code></pre>
+				</section>
+
+			</section>
+
+			<section>
+				<section>
+					<h2>Creazione di API RESTful con Gin</h2>
+					<p>Illustreremo come Gin semplifica lo sviluppo di API RESTful, focalizzandoci su routing,
+						parametri, middleware e operazioni CRUD.</p>
+					<pre><code class="go" data-line-numbers="11" data-ln-start-from="10">
+		...
+		databaseFlag, _ := rootCmd.PersistentFlags().GetString("database")
+
+		opts := pkg.Options{
+			Database: databaseFlag,
+		}
+
+		newController := pkg.NewController(opts)
+
+		router := gin.New()
+		setupRouter(router, newController)
+
+		router.Run(":" + port)
+		...
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Configurazione delle Route</h3>
+					<p>Le route GET non richiedono autenticazione, rendendo le informazioni disponibili pubblicamente.
+					</p>
+					<pre><code class="go" data-line-numbers="1-9"  data-ln-start-from="50">
+func setupRouter(router *gin.Engine, controller pkg.Controller) {
+	v1 := router.Group("/v1")
+	{
+		v1.GET("/driver/:id", api.GetDriver(controller))
+		v1.GET("/drivers/", api.GetDrivers(controller))
+		v1.GET("/drivers/year/:year", api.GetDriversByYear(controller))
+		v1.GET("/drivers/standings/:year", api.GetDriverStandingsByYear(controller))
+	}
+
+	v1Auth := router.Group("/v1")
+	{
+		v1Auth.Use(BasicAuth())
+		{
+			v1Auth.POST("/drivers", api.AddDriver(controller))
+		}
+	}
+}										
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Configurazione della Basic Auth con Gin</h3>
+					<p>Utilizzo del middleware di Gin per applicare la Basic Auth a specifiche route.</p>
+					<pre><code class="go">
+					// BasicAuth middleware
+					// Username: admin, Password: password
+					func BasicAuth() gin.HandlerFunc {
+						return gin.BasicAuth(gin.Accounts{
+							"admin": "password",
+						})
+					}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Configurazione delle Route</h3>
+					<p>Le route POST richiedono invece autenticazione, mettiamo come middleware BasiAuth()
+					</p>
+					<pre><code class="go" data-line-numbers="10-16">
+	func setupRouter(router *gin.Engine, controller pkg.Controller) {
+		v1 := router.Group("/v1")
+		{
+			v1.GET("/driver/:id", api.GetDriver(controller))
+			v1.GET("/drivers/", api.GetDrivers(controller))
+			v1.GET("/drivers/year/:year", api.GetDriversByYear(controller))
+		}
+
+		v1Auth := router.Group("/v1")
+		{
+			v1Auth.Use(BasicAuth())
+			{
+				v1Auth.POST("/drivers", api.AddDriver(controller))
+			}
+		}
+	}						
+					</code></pre>
+				</section>
+
+
+				<section>
+					<h3>Esempio</h3>
+					<p>Prendiamo in esempio GetDriverStandingsByYear() visto prima e proviamo ora ad assemlare i pezzi
+					</p>
+					<pre><code class="go" data-line-numbers="2|4-9|10-15">
+	func GetDriverStandingsByYear(controller pkg.Controller) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			driverIDStr := c.Param("year")
+			driverID, err := strconv.Atoi(driverIDStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid year param"})
+				return
+			}
+			driverStanding, err := controller.Service.GetDriverStandingsByYear(driverID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, driverStanding)
+		}
+	}				
+					</code></pre>
+				</section>
+
+
+
+			</section>
+
+
+			<section>
+				<h2>Tests</h2>
+				<section>
+					<h3>Introduzione ai Test in Go</h3>
+					<p>I test in Go sono scritti utilizzando il pacchetto standard `testing`.</p>
+					<p>La convenzione prevede che i file di test abbiano il suffisso `_test.go`.</p>
+				</section>
+
+				<section>
+					<h3>Struttura del Progetto per i Test</h3>
+					<p>È comune avere una struttura del progetto separata per i test. Ad esempio:</p>
+					<pre>
+				project/
+				├── main/
+				│   ├── main.go
+				│   └── ...
+				├── pkg/
+				│   ├── main.go
+				│   ├── controller.go
+				│   ├── service.go
+				│   └── ...
+				└── test/
+					├── main_test.go
+					├── controller_test.go
+					├── service_test.go
+					└── ...
+				</pre>
+				</section>
+
+				<section>
+					<h3>Esecuzione dei Test</h3>
+					<p>Eseguire i test è semplice utilizzando il comando `go test` dalla radice del progetto:</p>
+					<pre><code class="bash">
+					$ go get github.com/stretchr/testify
+					</code></pre>
+					<p>E modifica i test utilizzando assert:</p>
+					<pre><code class="go">
+					import "github.com/stretchr/testify/assert"
+
+					func TestExample(t *testing.T) {
+						assert.Equal(t, 123, 123, "they should be equal")
+					}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Esempio di Test per il Controller</h3>
+					<p>Creiamo un file di test `controller_test.go` per il package `pkg`.</p>
+					<pre><code class="go">
+	func TestGetDriver(t *testing.T) {
+		// Setup
+		controller := NewController(Options{
+			Database: "test.db",
+		})
+	
+
+		t.Run("GetDriver - Valid ID", func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/v1/driver/1", nil)
+			resp := httptest.NewRecorder()
+
+			router := gin.New()
+			setupRouter(router, controller)
+			router.ServeHTTP(resp, req)
+
+			assert.Equal(t, http.StatusOK, resp.Code)
+		})
+	}
+					</code></pre>
+				</section>
+
+			</section>
+
+			<section>
+				<h2>Q&A</h2>
+			</section>
+			<section>
+				<h2>Grazie</h2>
+				<p>Se avete ulteriori domande o feedback, non esitate a contattarmi.</p>
+				<h3>Seguimi sui Social</h3>
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+					<tr>
+						<td style="vertical-align: middle;"><img src="img/gh_logo.png" alt="GitHub Logo"
+								style="width: 75px; height: 75px;"></td>
+						<td style="vertical-align: middle;">@xm1k3</td>
+						<td style="vertical-align: middle;"><img src="img/gh_qr.png" alt="GitHub QR Code"
+								style="width: 110px; height: 110px;"></td>
+					</tr>
+					<tr>
+						<td style="vertical-align: middle;"><img src="img/linkedin_logo.png" alt="LinkedIn Logo"
+								style="width: 75px; height: 75px;"></td>
+						<td style="vertical-align: middle;">@mihai-gabriel-canea</td>
+						<td style="vertical-align: middle;"><img src="img/linkedin_qr.png" alt="LinkedIn QR Code"
+								style="width: 110px; height: 110px;"></td>
+					</tr>
+					<tr>
+						<td style="vertical-align: middle;"><img src="img/xlogo.png" alt="Twitter Logo"
+								style="width: 75px; height: 75px;"></td>
+						<td style="vertical-align: middle;">@xm1k3_</td>
+						<td style="vertical-align: middle;"><img src="img/twitter_qr.png" alt="Twitter QR Code"
+								style="width: 110px; height: 110px;"></td>
+					</tr>
+				</table>
+
+
 			</section>
 
 		</div>
