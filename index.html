@@ -194,76 +194,89 @@
 
 			<section>
 				<h2>Architettura del Progetto gof1</h2>
-
+				
 				<section>
-					<img src="img/dbdiagram.png" alt="Diagramma del Database" style="max-width: 35%; height: auto;">
-					<p>Questo diagramma mostra come sono strutturate e interconnesse le tabelle del database.</p>
+					<img src="img/dbdiagram.png" alt="Diagramma del Database" style="max-width: 50%; height: auto;">
+					<!-- <p>Questo diagramma mostra come sono strutturate e interconnesse le tabelle del database.</p> -->
 				</section>
-
+				
 
 				<section>
 					<h3>Controller</h3>
 					<p>I Controller gestiscono la logica di interazione con l'utente, ricevendo richieste e inviando
 						risposte.</p>
-					<pre><code class="go">
-						type Controller struct {
-							Service F1Service
-							DB      *gorm.DB
-						}
-						
-						type Options struct {
-							Database string
-						}
-					</code></pre>
-				</section>
+					<pre><code class="go"  data-line-numbers="2-9|11-28" data-ln-start-from="10">
+		type Controller struct {
+			Service F1Service
+			DB      *gorm.DB
+		}
+		
+		type Options struct {
+			Database string
+		}
 
-				<section>
-					<h3>Controller</h3>
-					<p>I Controller gestiscono la logica di interazione con l'utente, ricevendo richieste e inviando
-						risposte.</p>
-					<pre><code class="go">
-						func NewController(opts Options) Controller {
-							db, err := config.ConnectSqlite3(opts.Database)
-							if err != nil {
-								log.Fatal(err)
-							}
-							repositories := repositories.F1Repository{
-								DB: db,
-							}
-							service := services.F1Service{
-								Repository: repositories,
-							}
-							c := Controller{
-								Service: service,
-								DB:      db,
-							}
-							return c
-						}
+		func NewController(opts Options) Controller {
+			db, err := config.ConnectSqlite3(opts.Database)
+			if err != nil {
+				log.Fatal(err)
+			}
+			repositories := repositories.F1Repository{
+				DB: db,
+			}
+			service := services.F1Service{
+				Repository: repositories,
+			}
+			c := Controller{
+				Service: service,
+				DB:      db,
+			}
+			return c
+		}
+
 					</code></pre>
 				</section>
 
 				<section>
 					<h3>Interfacce</h3>
-					<p>Le interfacce in Go definiscono i contratti per i nostri Service e Repository.</p>
+					<p>Le interfacce in Go definiscono le firme per i nostri Service e Repository.</p>
 					<pre><code class="go">
-						type F1Service interface {
-							AddDriver(driver models.Driver) error
-							GetDriver(id int) (models.Driver, error)
-							GetDrivers(page, limit int) ([]models.Driver, error)
-							GetDriversByYear(year int) ([]models.Driver, error)
-							GetDriverStandingsByYear(year int) ([]models.DriverStanding, error)
-							UpdateDriver(driver models.Driver) error
-							DeleteDriver(id int) error
-							ImportDriversFromCsv(record []string) error
-							...
-						}
+	type F1Service interface {
+		AddDriver(driver models.Driver) error
+		GetDriver(id int) (models.Driver, error)
+		GetDrivers(page, limit int) ([]models.Driver, error)
+		GetDriversByYear(year int) ([]models.Driver, error)
+		GetDriverStandingsByYear(year int) ([]models.DriverStanding, error)
+		UpdateDriver(driver models.Driver) error
+		DeleteDriver(id int) error
+		ImportDriversFromCsv(record []string) error
+		...
+	}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Modelli</h3>
+					<p>I modelli definiscono le strutture dei dati che andremo ad utilizzare</p>
+					<pre><code class="go">
+	type Driver struct {
+		gorm.Model
+		DriverID    int       `gorm:"column:id" gorm:"primary_key" csv:"driverId"`
+		DriverRef   string    `gorm:"column:driverRef" csv:"driverRef"`
+		Number      string    `gorm:"column:number" csv:"number"`
+		Code        string    `gorm:"column:code" csv:"code"`
+		Forename    string    `gorm:"column:forename" csv:"forename"`
+		Surname     string    `gorm:"column:surname" csv:"surname"`
+		DOB         time.Time `gorm:"column:dob" csv:"dob"`
+		Nationality string    `gorm:"column:nationality" csv:"nationality"`
+		URL         string    `gorm:"column:url" csv:"url"`
+	}
+	...
 					</code></pre>
 				</section>
 
 				<section>
 					<h3>Service</h3>
-					<p>I Service contengono la logica di business e interagiscono con i Repository per l'accesso ai
-						dati.</p>
+					<p>I Service contengono la logica e interagiscono con i Repository per l'accesso ai dati.</p>
 					<pre><code class="go">
 					func (s *F1Service) GetDriver(id int) (models.Driver, error) {
 						return s.Repository.GetDriver(id)
@@ -288,22 +301,22 @@
 					<h3>Service</h3>
 					<p>... ma aumentiamo di poco la complessità...</p>
 					<pre><code class="go">
-					func (f F1Service) GetDriverStandingsByYear(year int) ([]models.DriverStanding, error) {
-						if year < 1950 || year > time.Now().Year() {
-							return nil, fmt.Errorf("year is out of valid range")
-						}
-					
-						standings, err := f.Repository.GetDriverStandingsByYear(year)
-						if err != nil {
-							return nil, fmt.Errorf("error retrieving driver standings: %w", err)
-						}
-					
-						if len(standings) == 0 {
-							return nil, fmt.Errorf("no driver standings found for year %d", year)
-						}
-					
-						return standings, nil
-					}
+	func (f F1Service) GetDriverStandingsByYear(year int) ([]models.DriverStanding, error) {
+		if year < 1950 || year > time.Now().Year() {
+			return nil, fmt.Errorf("year is out of valid range")
+		}
+	
+		standings, err := f.Repository.GetDriverStandingsByYear(year)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving driver standings: %w", err)
+		}
+	
+		if len(standings) == 0 {
+			return nil, fmt.Errorf("no driver standings found for year %d", year)
+		}
+	
+		return standings, nil
+	}
 					</code></pre>
 				</section>
 
@@ -311,21 +324,21 @@
 					<h3>Repository</h3>
 					<p></p>
 					<pre><code class="go">
-					func (r *F1Repository) GetDriverStandingsByYear(year int) ([]models.DriverStanding, error) {
-						var standings []models.DriverStanding
-					
-						err := r.DB.
-							Table("results").
-							Select("drivers.id, drivers.forename, drivers.surname, SUM(results.points) as points").
-							Joins("JOIN drivers on drivers.id = results.driverId").
-							Joins("JOIN races on races.id = results.raceId").
-							Where("races.year = ?", year).
-							Group("drivers.id, drivers.forename, drivers.surname").
-							Order("SUM(results.points) DESC").
-							Scan(&standings).Error
-					
-						return standings, err
-					}
+	func (r F1Repository) GetDriverStandingsByYear(year int) ([]models.DriverStanding, error) {
+		var standings []models.DriverStanding
+	
+		err := r.DB.
+			Table("results").
+			Select("drivers.id, drivers.forename, drivers.surname, SUM(results.points) as points").
+			Joins("JOIN drivers on drivers.id = results.driverId").
+			Joins("JOIN races on races.id = results.raceId").
+			Where("races.year = ?", year).
+			Group("drivers.id, drivers.forename, drivers.surname").
+			Order("SUM(results.points) DESC").
+			Scan(&standings).Error
+	
+		return standings, err
+	}
 					</code></pre>
 				</section>
 
@@ -395,7 +408,7 @@ func setupRouter(router *gin.Engine, controller pkg.Controller) {
 
 				<section>
 					<h3>Configurazione delle Route</h3>
-					<p>Le route POST richiedono invece autenticazione, mettiamo come middleware BasiAuth()
+					<p>Le route POST richiedono invece autenticazione, mettiamo come middleware BasicAuth()
 					</p>
 					<pre><code class="go" data-line-numbers="10-16">
 	func setupRouter(router *gin.Engine, controller pkg.Controller) {
@@ -443,6 +456,35 @@ func setupRouter(router *gin.Engine, controller pkg.Controller) {
 				</section>
 
 
+				<section>
+					<h3>Curl</h3>
+					<p>Proviamo ora a fare la richiesta con cUrl
+					</p>
+					<pre><code class="bash">
+	curl localhost:8080/v1/drivers/standings/2023 | jq
+
+	[
+	{
+		"forename": "Max",
+		"surname": "Verstappen",
+		"points": 292
+	},
+	{
+		"forename": "Sergio",
+		"surname": "Pérez",
+		"points": 174
+	},
+	{
+		"forename": "Lewis",
+		"surname": "Hamilton",
+		"points": 144
+	},
+	...
+]
+					</code></pre>
+				</section>
+
+
 
 			</section>
 
@@ -451,7 +493,7 @@ func setupRouter(router *gin.Engine, controller pkg.Controller) {
 				<h2>Tests</h2>
 				<section>
 					<h3>Introduzione ai Test in Go</h3>
-					<p>I test in Go sono scritti utilizzando il pacchetto standard `testing`.</p>
+					<p>I test in Go sono scritti utilizzando il pacchetto `testify`.</p>
 					<p>La convenzione prevede che i file di test abbiano il suffisso `_test.go`.</p>
 				</section>
 
